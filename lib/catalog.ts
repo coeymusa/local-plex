@@ -1,5 +1,11 @@
 import { getDb, type MetadataRow, type ProgressRow } from "./db";
-import { scanLibrary, scanLibraryCached, type MediaItem } from "./library";
+import {
+  scanLibrary,
+  scanLibraryCached,
+  encodeId,
+  decodeId,
+  type MediaItem,
+} from "./library";
 import { parsePath } from "./parse";
 import { tmdbLookup } from "./tmdb";
 
@@ -139,6 +145,8 @@ export type CardItem = {
   directPlay: boolean;
   meta: { title: string | null; year: number | null; poster_url: string | null } | null;
   progress: { pct: number } | null;
+  /** Present when this card represents a grouped TV series, not a single file. */
+  series?: { count: number };
 };
 
 export function toCard(i: EnrichedItem): CardItem {
@@ -155,19 +163,101 @@ export function toCard(i: EnrichedItem): CardItem {
   };
 }
 
+// --- Series grouping --------------------------------------------------------
+// Detects TV episodes (S01E02, 1x02, [3 01], "Season N", "Episode N") and
+// collapses each show into a single card that opens its episode list.
+const EP_SIGNAL =
+  /\bs\d{1,2}[\s._-]*e\d{1,2}\b|\b\d{1,2}x\d{1,2}\b|\[\s*\d{1,2}[\s._-]+\d{1,2}\s*\]|\bseason[\s._-]*\d+\b|\bepisode[\s._-]*\d+\b|\bE\d{2}\b/i;
+
+export function isEpisode(relPath: string): boolean {
+  return EP_SIGNAL.test(relPath);
+}
+
+/** Normalised show name for grouping (strips season/collection noise). */
+export function seriesName(relPath: string): string {
+  return parsePath(relPath)
+    .title.replace(/\b(season|series|s|part)[\s._-]*\d+\b/gi, "")
+    .replace(/\b(complete|collection|full|the\s+complete)\b/gi, "")
+    .replace(/[-–—\s]+$/g, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+const SERIES_PREFIX = "S:";
+
+function toSeriesCard(name: string, eps: EnrichedItem[]): CardItem {
+  // Use the first episode that has artwork for the series poster.
+  const withArt = eps.find((e) => e.meta?.poster_url) ?? eps[0];
+  return {
+    id: encodeId(SERIES_PREFIX + name),
+    title: name,
+    ext: "",
+    sizeBytes: eps.reduce((s, e) => s + e.sizeBytes, 0),
+    directPlay: false,
+    meta: {
+      title: name,
+      year: withArt.meta?.year ?? null,
+      poster_url: withArt.meta?.poster_url ?? null,
+    },
+    progress: null,
+    series: { count: eps.length },
+  };
+}
+
+/** Collapse episodes into series cards; movies stay individual. */
+export function groupCatalog(items: EnrichedItem[]): CardItem[] {
+  const groups = new Map<string, EnrichedItem[]>();
+  const out: CardItem[] = [];
+
+  for (const item of items) {
+    if (isEpisode(item.relPath)) {
+      const name = seriesName(item.relPath);
+      if (name) {
+        const g = groups.get(name);
+        if (g) g.push(item);
+        else groups.set(name, [item]);
+        continue;
+      }
+    }
+    out.push(toCard(item));
+  }
+
+  for (const [name, eps] of groups) {
+    if (eps.length >= 2) out.push(toSeriesCard(name, eps));
+    else out.push(toCard(eps[0]));
+  }
+
+  out.sort((a, b) => (a.meta?.title || a.title).localeCompare(b.meta?.title || b.title));
+  return out;
+}
+
+/** Episodes belonging to a series id (from a series card), sorted naturally. */
+export async function getSeriesEpisodes(
+  id: string
+): Promise<{ name: string; episodes: EnrichedItem[] } | null> {
+  const rel = decodeId(id);
+  if (!rel || !rel.startsWith(SERIES_PREFIX)) return null;
+  const name = rel.slice(SERIES_PREFIX.length);
+  const all = await getCatalog();
+  const episodes = all
+    .filter((i) => isEpisode(i.relPath) && seriesName(i.relPath) === name)
+    .sort((a, b) => a.relPath.localeCompare(b.relPath, undefined, { numeric: true }));
+  return episodes.length ? { name, episodes } : null;
+}
+
 /** Server-side search + pagination over the (cached) catalog. */
 export async function searchCatalog(
   q: string,
   offset: number,
   limit: number
 ): Promise<{ total: number; items: CardItem[] }> {
-  const all = await getCatalog();
+  const grouped = groupCatalog(await getCatalog());
   const needle = q.trim().toLowerCase();
   const filtered = needle
-    ? all.filter((i) => (i.meta?.title || i.title).toLowerCase().includes(needle))
-    : all;
+    ? grouped.filter((c) => (c.meta?.title || c.title).toLowerCase().includes(needle))
+    : grouped;
   return {
     total: filtered.length,
-    items: filtered.slice(offset, offset + limit).map(toCard),
+    items: filtered.slice(offset, offset + limit),
   };
 }

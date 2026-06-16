@@ -22,6 +22,7 @@ export default function LoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [celebrate, setCelebrate] = useState(false);
 
   function succeed() {
     router.replace(next);
@@ -42,7 +43,9 @@ export default function LoginForm() {
       }),
     });
     if (res.ok) {
-      succeed();
+      // Funny gag: flash the orange-sunset photo before dropping into the app.
+      setCelebrate(true);
+      setTimeout(() => succeed(), 2000);
       return;
     }
     const data = await res.json().catch(() => ({}));
@@ -80,6 +83,22 @@ export default function LoginForm() {
     }
   }
 
+  if (celebrate) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-black">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/julia/m3.jpeg" alt="" className="absolute inset-0 h-full w-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/30" />
+        <div className="relative px-6 text-center">
+          <p className="text-3xl font-extrabold text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">
+            Correct
+          </p>
+          <p className="mt-1 text-lg text-white/90 drop-shadow-lg">You&apos;re in.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto mt-16 w-full max-w-sm px-2">
       <div className="mb-8 text-center">
@@ -102,7 +121,7 @@ export default function LoginForm() {
             }}
             className="w-full rounded-xl bg-accent px-4 py-4 text-base font-semibold text-black active:scale-[.98]"
           >
-            Yes, it&apos;s me 💛
+            Yes, it&apos;s me
           </button>
           <button
             onClick={() => {

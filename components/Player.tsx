@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Hls from "hls.js";
 
 export default function Player({
@@ -16,6 +16,21 @@ export default function Player({
 }) {
   const ref = useRef<HTMLVideoElement>(null);
   const lastSent = useRef(0);
+  const [ended, setEnded] = useState(false);
+
+  // Funny gag: when a video finishes, the sad-face photo turns up.
+  useEffect(() => {
+    const video = ref.current;
+    if (!video) return;
+    const onEnded = () => setEnded(true);
+    const onPlay = () => setEnded(false);
+    video.addEventListener("ended", onEnded);
+    video.addEventListener("play", onPlay);
+    return () => {
+      video.removeEventListener("ended", onEnded);
+      video.removeEventListener("play", onPlay);
+    };
+  }, []);
 
   // Attach the source — native for direct play / Safari HLS, hls.js otherwise.
   useEffect(() => {
@@ -85,13 +100,41 @@ export default function Player({
     };
   }, [id, initialPosition]);
 
+  function watchAgain() {
+    const v = ref.current;
+    if (!v) return;
+    v.currentTime = 0;
+    v.play();
+    setEnded(false);
+  }
+
   return (
-    <video
-      ref={ref}
-      controls
-      autoPlay
-      playsInline
-      className="aspect-video w-full bg-black"
-    />
+    <div className="relative">
+      <video
+        ref={ref}
+        controls
+        autoPlay
+        playsInline
+        className="aspect-video w-full bg-black"
+      />
+      {ended && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center overflow-hidden bg-black">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/julia/m2.jpeg" alt="" className="absolute inset-0 h-full w-full object-cover" />
+          <div className="absolute inset-0 bg-black/40" />
+          <div className="relative px-6 text-center">
+            <p className="text-2xl font-bold text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">
+              It&apos;s over.
+            </p>
+            <button
+              onClick={watchAgain}
+              className="mt-4 rounded-full bg-white px-5 py-2 text-sm font-semibold text-black active:scale-95"
+            >
+              Watch again
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

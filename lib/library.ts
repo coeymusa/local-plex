@@ -52,6 +52,28 @@ function cleanTitle(filename: string): string {
     .trim();
 }
 
+// Folder names that hold special features rather than episodes/movies.
+// (Kept: "specials" — those are often real Season 0 episodes.)
+const EXCLUDE_DIRS = new Set([
+  "extras",
+  "featurettes",
+  "featurette",
+  "behind the scenes",
+  "deleted scenes",
+  "deleted",
+  "bonus",
+  "bonus scenes",
+  "interviews",
+  "trailers",
+  "sample",
+  "samples",
+  "other",
+]);
+
+// Filenames that are clearly extras even when not inside an extras folder.
+const EXTRA_FILE =
+  /\b(deleted[\s._-]*scenes?|bloopers?|featurettes?|bonus[\s._-]*scenes?|outtakes?|gag[\s._-]*reel|behind[\s._-]*the[\s._-]*scenes|audition)\b/i;
+
 /** Recursively scan MEDIA_DIR for video files. */
 export async function scanLibrary(): Promise<MediaItem[]> {
   const items: MediaItem[] = [];
@@ -66,12 +88,16 @@ export async function scanLibrary(): Promise<MediaItem[]> {
     for (const entry of entries) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
-        // Skip Synology system dirs: recycle bin + thumbnail/index store.
+        // Skip Synology system dirs + "extras" folders (special features, not
+        // episodes/movies): featurettes, deleted scenes, bloopers, samples, etc.
         if (entry.name === "#recycle" || entry.name === "@eaDir") continue;
+        if (EXCLUDE_DIRS.has(entry.name.toLowerCase().trim())) continue;
         await walk(full);
       } else if (entry.isFile()) {
         const ext = path.extname(entry.name).toLowerCase();
         if (!VIDEO_EXTS.has(ext)) continue;
+        // Skip stray extras files even when not in an extras folder.
+        if (EXTRA_FILE.test(entry.name)) continue;
         let sizeBytes = 0;
         try {
           sizeBytes = (await fs.stat(full)).size;

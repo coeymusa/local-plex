@@ -47,3 +47,6 @@ next-env.d.ts
 
 # image export tarballs
 *.tgz
+
+# personal photos (Julia screen) — deploy to NAS, never commit
+/public/julia/

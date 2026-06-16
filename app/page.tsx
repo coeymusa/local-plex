@@ -3,7 +3,7 @@ import { searchCatalog, continueWatching, toCard, getCatalog } from "@/lib/catal
 import { MEDIA_DIR } from "@/lib/config";
 import { tmdbEnabled } from "@/lib/tmdb";
 import { authEnabled } from "@/lib/auth";
-import { juliaRows, juliaHero } from "@/lib/julia";
+import { buildJuliaView } from "@/lib/julia";
 import PosterCard from "@/components/PosterCard";
 import LibraryBrowser from "@/components/LibraryBrowser";
 import TopActions from "@/components/TopActions";
@@ -21,23 +21,8 @@ export default async function Home({
 
   // Julia gets her curated screen by default (unless she clicks "Browse everything").
   if (isJulia && all !== "1") {
-    const catalog = await getCatalog();
-    const rows = juliaRows(catalog);
-    const heroItem = juliaHero(rows);
-    return (
-      <JuliaHome
-        hero={
-          heroItem
-            ? {
-                id: heroItem.id,
-                title: heroItem.meta?.title || heroItem.title,
-                backdrop_url: heroItem.meta?.backdrop_url ?? null,
-              }
-            : null
-        }
-        rows={rows.map((r) => ({ title: r.title, items: r.items.map(toCard) }))}
-      />
-    );
+    const { hero, rows } = buildJuliaView(await getCatalog());
+    return <JuliaHome hero={hero} rows={rows} />;
   }
 
   // Only the first page is rendered server-side; the rest loads on demand.

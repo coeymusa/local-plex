@@ -28,7 +28,7 @@ export default function JuliaHome({
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 px-6 pb-7">
           <p className="text-sm font-medium uppercase tracking-widest text-accent">
-            Hi Julia 💛
+            Hi Julia
           </p>
           <h1 className="mt-1 text-3xl font-bold tracking-tight drop-shadow-lg sm:text-4xl">
             {hero?.title ?? "Your shows"}
