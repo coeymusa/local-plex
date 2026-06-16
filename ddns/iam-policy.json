@@ -1,0 +1,21 @@
+{
+  "Version": "2012-10-17",
+  "Comment": "Least-privilege policy for the HomeHome DDNS updater. Create a dedicated IAM user with ONLY this policy, and put its access key in the NAS .env — do not reuse your main credentials.",
+  "Statement": [
+    {
+      "Sid": "ChangeOneZone",
+      "Effect": "Allow",
+      "Action": [
+        "route53:ChangeResourceRecordSets",
+        "route53:ListResourceRecordSets"
+      ],
+      "Resource": "arn:aws:route53:::hostedzone/YOUR_ROUTE53_ZONE_ID"
+    },
+    {
+      "Sid": "CheckChangeStatus",
+      "Effect": "Allow",
+      "Action": "route53:GetChange",
+      "Resource": "*"
+    }
+  ]
+}

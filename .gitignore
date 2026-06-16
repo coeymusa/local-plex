@@ -39,3 +39,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# homehome: local sqlite db + media files
+/.data/
+/media/*
+!/media/.gitkeep
+
+# image export tarballs
+*.tgz

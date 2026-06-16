@@ -1,65 +1,114 @@
-import Image from "next/image";
+import { cookies } from "next/headers";
+import { searchCatalog, continueWatching, toCard, getCatalog } from "@/lib/catalog";
+import { MEDIA_DIR } from "@/lib/config";
+import { tmdbEnabled } from "@/lib/tmdb";
+import { authEnabled } from "@/lib/auth";
+import { juliaRows, juliaHero } from "@/lib/julia";
+import PosterCard from "@/components/PosterCard";
+import LibraryBrowser from "@/components/LibraryBrowser";
+import TopActions from "@/components/TopActions";
+import JuliaHome from "@/components/JuliaHome";
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ all?: string }>;
+}) {
+  const [{ all }, cookieStore] = await Promise.all([searchParams, cookies()]);
+  const isJulia = cookieStore.get("homehome_who")?.value === "julia";
+
+  // Julia gets her curated screen by default (unless she clicks "Browse everything").
+  if (isJulia && all !== "1") {
+    const catalog = await getCatalog();
+    const rows = juliaRows(catalog);
+    const heroItem = juliaHero(rows);
+    return (
+      <JuliaHome
+        hero={
+          heroItem
+            ? {
+                id: heroItem.id,
+                title: heroItem.meta?.title || heroItem.title,
+                backdrop_url: heroItem.meta?.backdrop_url ?? null,
+              }
+            : null
+        }
+        rows={rows.map((r) => ({ title: r.title, items: r.items.map(toCard) }))}
+      />
+    );
+  }
+
+  // Only the first page is rendered server-side; the rest loads on demand.
+  const [{ items, total }, resuming] = await Promise.all([
+    searchCatalog("", 0, 60),
+    continueWatching(),
+  ]);
+  const hasMeta = items.some((i) => i.meta?.poster_url);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="space-y-10">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h1 className="text-sm font-medium uppercase tracking-widest text-white/40">
+          Home
+        </h1>
+        <TopActions tmdbEnabled={tmdbEnabled()} authEnabled={authEnabled()} />
+      </div>
+
+      {!tmdbEnabled() && total > 0 && (
+        <div className="rounded-lg border border-white/10 bg-white/5 p-4 text-sm text-white/60">
+          💡 Add a free{" "}
+          <span className="text-white/90">TMDB_API_KEY</span> to{" "}
+          <span className="text-white/90">.env.local</span> to pull real posters,
+          titles and descriptions, then hit “Match metadata”.
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      )}
+
+      {resuming.length > 0 && (
+        <section>
+          <h2 className="mb-4 text-lg font-semibold tracking-tight">
+            Continue watching
+          </h2>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+            {resuming.slice(0, 6).map((item) => (
+              <PosterCard key={item.id} item={toCard(item)} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {total === 0 ? (
+        <EmptyState />
+      ) : (
+        <LibraryBrowser initialItems={items} initialTotal={total} />
+      )}
+
+      {!hasMeta && total > 0 && tmdbEnabled() && (
+        <p className="text-center text-xs text-white/30">
+          Tip: click “Match metadata” to fetch posters for your library.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function EmptyState() {
+  return (
+    <div className="mt-10 rounded-xl border border-dashed border-white/15 p-10 text-center">
+      <p className="text-lg font-medium">No videos found yet</p>
+      <p className="mx-auto mt-2 max-w-md text-sm text-white/50">
+        The app is scanning this folder:
+      </p>
+      <code className="mt-3 inline-block rounded bg-black/40 px-3 py-1.5 text-xs text-accent">
+        {MEDIA_DIR}
+      </code>
+      <p className="mx-auto mt-4 max-w-md text-sm text-white/50">
+        Drop some <span className="text-white/80">.mp4</span> files in there, or
+        point the app at your NAS by setting{" "}
+        <span className="text-white/80">MEDIA_DIR</span> in{" "}
+        <span className="text-white/80">.env.local</span> and restarting.
+      </p>
     </div>
   );
 }

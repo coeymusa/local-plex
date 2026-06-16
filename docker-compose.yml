@@ -1,0 +1,50 @@
+# HomeHome on Synology (Container Manager → Projects → Create → upload this folder)
+#
+# Exposure model: Synology's built-in Reverse Proxy terminates HTTPS for
+# yinyan.news (Let's Encrypt) and forwards to this container on localhost:3000.
+# Route 53 points yinyan.news at your home IP; the router forwards 443 → NAS.
+# See DEPLOY.md.
+#
+# Set values in a .env file next to this (see .env.docker.example), or in the
+# Container Manager UI. Adjust /volume1/Videos if your share is on another volume.
+
+services:
+  app:
+    build: .
+    image: homehome:latest
+    container_name: homehome
+    restart: unless-stopped
+    environment:
+      - MEDIA_DIR=/media
+      - APP_PASSWORD=${APP_PASSWORD}
+      - TMDB_API_KEY=${TMDB_API_KEY:-}
+      - QUIZ_LOLLIPOP=${QUIZ_LOLLIPOP:-}
+      - QUIZ_PASTA=${QUIZ_PASTA:-}
+      - QUIZ_NYC=${QUIZ_NYC:-}
+      - QUIZ_GREATNESS=${QUIZ_GREATNESS:-10}
+    volumes:
+      - /volume1/Videos:/media:ro      # your media, read-only
+      - homehome-data:/app/.data       # metadata + resume positions (persisted)
+    ports:
+      - "3000:3000"                     # Synology reverse proxy forwards here
+
+  # Keeps watch.example.com pointed at your current home IP (for dynamic
+  # ISPs). Uses a dedicated, least-privilege IAM key (see ddns/iam-policy.json).
+  ddns:
+    image: amazon/aws-cli:latest
+    container_name: homehome-ddns
+    restart: unless-stopped
+    entrypoint: ["/bin/bash", "/update-route53.sh"]
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_DEFAULT_REGION=us-east-1
+      - HOSTED_ZONE_ID=${HOSTED_ZONE_ID}
+      - RECORD_NAME=${RECORD_NAME}
+      - TTL=300
+      - INTERVAL=300
+    volumes:
+      - ./ddns/update-route53.sh:/update-route53.sh:ro
+
+volumes:
+  homehome-data:

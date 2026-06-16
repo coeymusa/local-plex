@@ -1,0 +1,10 @@
+node_modules
+.next
+.git
+.data
+media
+*.log
+.env*
+npm-debug.log*
+README.md
+DEPLOY.md
