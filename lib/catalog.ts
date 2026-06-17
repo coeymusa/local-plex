@@ -19,9 +19,16 @@ function metaMap(): Map<string, MetadataRow> {
   return new Map(rows.map((r) => [r.rel_path, r]));
 }
 
-function progressMap(): Map<string, ProgressRow> {
-  const rows = getDb().prepare("SELECT * FROM progress").all() as ProgressRow[];
-  return new Map(rows.map((r) => [r.id, r]));
+// Progress is stored per viewer: the row id is "<who>:<mediaId>". This maps a
+// viewer's rows back to plain media ids.
+function progressMap(who: string): Map<string, ProgressRow> {
+  const prefix = who + ":";
+  const rows = getDb()
+    .prepare("SELECT * FROM progress WHERE id LIKE ?")
+    .all(prefix + "%") as ProgressRow[];
+  const m = new Map<string, ProgressRow>();
+  for (const r of rows) m.set(r.id.slice(prefix.length), r);
+  return m;
 }
 
 function enrich(
@@ -38,21 +45,21 @@ function enrich(
   return { ...item, meta, progress };
 }
 
-/** Full catalog with cached metadata + resume progress attached (no network). */
-export async function getCatalog(): Promise<EnrichedItem[]> {
-  const [items, metas, progs] = [await scanLibraryCached(), metaMap(), progressMap()];
+/** Full catalog with cached metadata + the given viewer's resume progress. */
+export async function getCatalog(who = "corey"): Promise<EnrichedItem[]> {
+  const [items, metas, progs] = [await scanLibraryCached(), metaMap(), progressMap(who)];
   return items.map((i) => enrich(i, metas, progs));
 }
 
-export async function getEnrichedItem(id: string): Promise<EnrichedItem | null> {
-  const items = await getCatalog();
+export async function getEnrichedItem(id: string, who = "corey"): Promise<EnrichedItem | null> {
+  const items = await getCatalog(who);
   return items.find((i) => i.id === id) ?? null;
 }
 
-/** Items the user started but hasn't finished, newest first. */
-export async function continueWatching(): Promise<EnrichedItem[]> {
-  const all = await getCatalog();
-  const progs = progressMap();
+/** Items the viewer started but hasn't finished, newest first. */
+export async function continueWatching(who = "corey"): Promise<EnrichedItem[]> {
+  const all = await getCatalog(who);
+  const progs = progressMap(who);
   return all
     .filter((i) => i.progress && i.progress.pct > 0.02 && i.progress.pct < 0.95)
     .sort(
@@ -233,25 +240,39 @@ export function groupCatalog(items: EnrichedItem[]): CardItem[] {
 
 /** Episodes belonging to a series id (from a series card), sorted naturally. */
 export async function getSeriesEpisodes(
-  id: string
+  id: string,
+  who = "corey"
 ): Promise<{ name: string; episodes: EnrichedItem[] } | null> {
   const rel = decodeId(id);
   if (!rel || !rel.startsWith(SERIES_PREFIX)) return null;
   const name = rel.slice(SERIES_PREFIX.length);
-  const all = await getCatalog();
+  const all = await getCatalog(who);
   const episodes = all
     .filter((i) => isEpisode(i.relPath) && seriesName(i.relPath) === name)
     .sort((a, b) => a.relPath.localeCompare(b.relPath, undefined, { numeric: true }));
   return episodes.length ? { name, episodes } : null;
 }
 
+/** The id of the next episode in the same series (for autoplay), or null. */
+export async function nextEpisodeId(currentId: string): Promise<string | null> {
+  const item = await getEnrichedItem(currentId);
+  if (!item || !isEpisode(item.relPath)) return null;
+  const name = seriesName(item.relPath);
+  const eps = (await getCatalog())
+    .filter((i) => isEpisode(i.relPath) && seriesName(i.relPath) === name)
+    .sort((a, b) => a.relPath.localeCompare(b.relPath, undefined, { numeric: true }));
+  const idx = eps.findIndex((e) => e.id === currentId);
+  return idx >= 0 && idx + 1 < eps.length ? eps[idx + 1].id : null;
+}
+
 /** Server-side search + pagination over the (cached) catalog. */
 export async function searchCatalog(
+  who: string,
   q: string,
   offset: number,
   limit: number
 ): Promise<{ total: number; items: CardItem[] }> {
-  const grouped = groupCatalog(await getCatalog());
+  const grouped = groupCatalog(await getCatalog(who));
   const needle = q.trim().toLowerCase();
   const filtered = needle
     ? grouped.filter((c) => (c.meta?.title || c.title).toLowerCase().includes(needle))

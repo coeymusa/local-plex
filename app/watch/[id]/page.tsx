@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getEnrichedItem } from "@/lib/catalog";
+import { getEnrichedItem, nextEpisodeId } from "@/lib/catalog";
 import { resolveSafePath } from "@/lib/library";
 import { probe, canDirectPlay } from "@/lib/ffmpeg";
+import { listSubtitles } from "@/lib/subs";
+import { currentWho } from "@/lib/who";
 import { formatBytes } from "@/lib/format";
 import Player from "@/components/Player";
 
@@ -14,7 +16,8 @@ export default async function WatchPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const item = await getEnrichedItem(id);
+  const who = await currentWho();
+  const item = await getEnrichedItem(id, who);
   if (!item) notFound();
 
   // Probe the actual codecs to decide direct play vs. transcoding. Falls back
@@ -28,6 +31,11 @@ export default async function WatchPage({
       /* keep extension-based guess */
     }
   }
+
+  const [subs, nextId] = await Promise.all([
+    file ? listSubtitles(file).catch(() => []) : Promise.resolve([]),
+    nextEpisodeId(id).catch(() => null),
+  ]);
 
   const src = mode === "direct" ? `/api/stream/${id}` : `/api/hls/${id}/index.m3u8`;
   const title = item.meta?.title || item.title;
@@ -56,6 +64,8 @@ export default async function WatchPage({
           src={src}
           mode={mode}
           initialPosition={item.progress?.position ?? 0}
+          subs={subs.map((s) => ({ track: s.track, label: s.label, lang: s.lang }))}
+          nextId={nextId}
         />
       </div>
 

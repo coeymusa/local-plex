@@ -27,6 +27,8 @@ function init(): DatabaseSync {
       backdrop_url TEXT,
       rating       REAL,
       genres       TEXT,
+      ep_title     TEXT,
+      ep_still     TEXT,
       fetched_at   INTEGER
     );
     CREATE TABLE IF NOT EXISTS progress (
@@ -36,11 +38,13 @@ function init(): DatabaseSync {
       updated_at INTEGER NOT NULL
     );
   `);
-  // Migration for DBs created before the genres column existed.
-  try {
-    db.exec("ALTER TABLE metadata ADD COLUMN genres TEXT");
-  } catch {
-    /* column already exists */
+  // Migrations for columns added after the table first shipped.
+  for (const col of ["genres TEXT", "ep_title TEXT", "ep_still TEXT"]) {
+    try {
+      db.exec(`ALTER TABLE metadata ADD COLUMN ${col}`);
+    } catch {
+      /* column already exists */
+    }
   }
   return db;
 }
@@ -61,6 +65,8 @@ export type MetadataRow = {
   backdrop_url: string | null;
   rating: number | null;
   genres: string | null;
+  ep_title: string | null;
+  ep_still: string | null;
   fetched_at: number | null;
 };
 

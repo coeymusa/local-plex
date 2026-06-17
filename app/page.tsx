@@ -18,17 +18,18 @@ export default async function Home({
 }) {
   const [{ all }, cookieStore] = await Promise.all([searchParams, cookies()]);
   const isJulia = cookieStore.get("homehome_who")?.value === "julia";
+  const who = isJulia ? "julia" : "corey";
 
   // Julia gets her curated screen by default (unless she clicks "Browse everything").
   if (isJulia && all !== "1") {
-    const { hero, rows } = buildJuliaView(await getCatalog());
+    const { hero, rows } = buildJuliaView(await getCatalog(who));
     return <JuliaHome hero={hero} rows={rows} />;
   }
 
   // Only the first page is rendered server-side; the rest loads on demand.
   const [{ items, total }, resuming] = await Promise.all([
-    searchCatalog("", 0, 60),
-    continueWatching(),
+    searchCatalog(who, "", 0, 60),
+    continueWatching(who),
   ]);
   const hasMeta = items.some((i) => i.meta?.poster_url);
 

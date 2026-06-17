@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getSeriesEpisodes } from "@/lib/catalog";
 import type { EnrichedItem } from "@/lib/catalog";
+import { currentWho } from "@/lib/who";
 import { formatBytes } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -27,7 +28,7 @@ export default async function SeriesPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const data = await getSeriesEpisodes(id);
+  const data = await getSeriesEpisodes(id, await currentWho());
   if (!data) notFound();
 
   const { name, episodes } = data;
@@ -76,18 +77,32 @@ export default async function SeriesPage({
                 .sort((a, b) => epInfo(a.relPath).episode - epInfo(b.relPath).episode)
                 .map((ep) => {
                   const { episode } = epInfo(ep.relPath);
-                  const label = ep.relPath.split("/").pop()!.replace(/\.[^.]+$/, "");
+                  const filename = ep.relPath.split("/").pop()!.replace(/\.[^.]+$/, "");
+                  const title = ep.meta?.ep_title || filename;
+                  const still = ep.meta?.ep_still;
+                  const resume = ep.progress;
                   return (
                     <Link
                       key={ep.id}
                       href={`/watch/${ep.id}`}
-                      className="flex items-center gap-3 bg-white/[0.02] px-4 py-3 hover:bg-white/[0.06]"
+                      className="flex items-center gap-3 bg-white/[0.02] px-3 py-2.5 hover:bg-white/[0.06]"
                     >
-                      <span className="grid h-8 w-10 shrink-0 place-items-center rounded bg-accent/15 text-sm font-semibold text-accent">
-                        {episode || "•"}
+                      <span className="relative aspect-video w-24 shrink-0 overflow-hidden rounded bg-white/5 sm:w-28">
+                        {still ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={still} alt="" loading="lazy" className="h-full w-full object-cover" />
+                        ) : (
+                          <span className="absolute inset-0 grid place-items-center text-white/30">▶</span>
+                        )}
+                        {resume && (
+                          <span className="absolute inset-x-0 bottom-0 h-0.5 bg-accent" style={{ width: `${Math.round(resume.pct * 100)}%` }} />
+                        )}
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="line-clamp-1 text-sm">{label}</span>
+                        <span className="line-clamp-1 text-sm">
+                          <span className="text-accent">{episode ? `${episode}. ` : ""}</span>
+                          {title}
+                        </span>
                         <span className="text-xs text-white/40">{formatBytes(ep.sizeBytes)}</span>
                       </span>
                       <span className="shrink-0 text-white/40">▶</span>

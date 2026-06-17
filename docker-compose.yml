@@ -25,6 +25,8 @@ services:
     volumes:
       - /volume1/Videos:/media:ro      # your media, read-only
       - homehome-data:/app/.data       # metadata + resume positions (persisted)
+    devices:
+      - /dev/dri:/dev/dri               # Intel QuickSync for hardware transcoding
     ports:
       - "3000:3000"                     # Synology reverse proxy forwards here
 
