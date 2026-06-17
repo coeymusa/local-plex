@@ -12,10 +12,12 @@ export const dynamic = "force-dynamic";
 
 export default async function WatchPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ binge?: string }>;
 }) {
-  const { id } = await params;
+  const [{ id }, { binge }] = await Promise.all([params, searchParams]);
   const who = await currentWho();
   const item = await getEnrichedItem(id, who);
   if (!item) notFound();
@@ -66,6 +68,7 @@ export default async function WatchPage({
           initialPosition={item.progress?.position ?? 0}
           subs={subs.map((s) => ({ track: s.track, label: s.label, lang: s.lang }))}
           nextId={nextId}
+          binge={Number(binge) || 0}
         />
       </div>
 

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Hls from "hls.js";
+import { Lemon } from "./Doodles";
 
 type Sub = { track: string; label: string; lang: string };
 
@@ -13,6 +14,7 @@ export default function Player({
   initialPosition,
   subs = [],
   nextId = null,
+  binge = 0,
 }: {
   id: string;
   src: string;
@@ -20,24 +22,30 @@ export default function Player({
   initialPosition: number;
   subs?: Sub[];
   nextId?: string | null;
+  /** How many episodes have been watched back-to-back before this one. */
+  binge?: number;
 }) {
   const router = useRouter();
   const ref = useRef<HTMLVideoElement>(null);
   const lastSent = useRef(0);
-  const [ended, setEnded] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
+  const [wellness, setWellness] = useState(false);
+  const streak = useRef(0);
 
-  // On finish: auto-advance to the next episode (countdown), else the sad photo.
+  // On finish: if there's a next episode, either nudge (every 3rd) or auto-advance.
   useEffect(() => {
     const video = ref.current;
     if (!video) return;
     const onEnded = () => {
-      if (nextId) setCountdown(8);
-      else setEnded(true);
+      if (!nextId) return; // movie / last episode — just stop, no overlay
+      const s = binge + 1;
+      streak.current = s;
+      if (s % 3 === 0) setWellness(true);
+      else setCountdown(8);
     };
     const onPlay = () => {
-      setEnded(false);
       setCountdown(null);
+      setWellness(false);
     };
     video.addEventListener("ended", onEnded);
     video.addEventListener("play", onPlay);
@@ -45,20 +53,20 @@ export default function Player({
       video.removeEventListener("ended", onEnded);
       video.removeEventListener("play", onPlay);
     };
-  }, [nextId]);
+  }, [nextId, binge]);
 
   // Next-episode countdown tick.
   useEffect(() => {
     if (countdown === null) return;
     if (countdown <= 0) {
-      router.push(`/watch/${nextId}`);
+      router.push(`/watch/${nextId}?binge=${streak.current}`);
       return;
     }
     const t = setTimeout(() => setCountdown((c) => (c === null ? null : c - 1)), 1000);
     return () => clearTimeout(t);
   }, [countdown, nextId, router]);
 
-  // Attach the source — native for direct play / Safari HLS, hls.js otherwise.
+  // Attach the source.
   useEffect(() => {
     const video = ref.current;
     if (!video) return;
@@ -83,7 +91,6 @@ export default function Player({
   useEffect(() => {
     const video = ref.current;
     if (!video) return;
-
     function onLoaded() {
       const v = ref.current!;
       if (initialPosition > 0 && v.duration && initialPosition < v.duration * 0.97) {
@@ -120,68 +127,55 @@ export default function Player({
     };
   }, [id, initialPosition]);
 
-  function watchAgain() {
-    const v = ref.current;
-    if (!v) return;
-    v.currentTime = 0;
-    v.play();
-    setEnded(false);
-  }
-
   return (
     <div className="relative">
       <video ref={ref} controls autoPlay playsInline className="aspect-video w-full bg-black">
         {subs.map((s) => (
-          <track
-            key={s.track}
-            kind="subtitles"
-            src={`/api/subs/${id}/${s.track}`}
-            srcLang={s.lang}
-            label={s.label}
-          />
+          <track key={s.track} kind="subtitles" src={`/api/subs/${id}/${s.track}`} srcLang={s.lang} label={s.label} />
         ))}
       </video>
 
-      {/* Next-episode autoplay */}
-      {countdown !== null && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/85">
+      {/* Binge nudge — every 3rd episode */}
+      {wellness && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-bg/90 backdrop-blur-sm">
           <div className="px-6 text-center">
-            <p className="text-sm uppercase tracking-widest text-white/50">Up next</p>
-            <p className="mt-2 text-lg text-white">Next episode in {countdown}…</p>
+            <Lemon className="mx-auto h-14 w-14" />
+            <p className="mt-3 text-xs uppercase tracking-[0.22em] text-cream-dim">
+              3 episodes in a row
+            </p>
+            <h2 className="font-display mt-1 text-2xl font-semibold text-cream">
+              Drink water or fix posture
+            </h2>
+            <button
+              onClick={() => router.push(`/watch/${nextId}?binge=0`)}
+              className="mt-5 rounded-full bg-accent px-6 py-2.5 text-sm font-semibold text-bg transition hover:bg-citrus active:scale-95"
+            >
+              Okay, keep watching
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Next-episode autoplay countdown */}
+      {countdown !== null && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-bg/85">
+          <div className="px-6 text-center">
+            <p className="text-sm uppercase tracking-[0.22em] text-cream-dim">Up next</p>
+            <p className="font-display mt-2 text-xl text-cream">Next episode in {countdown}…</p>
             <div className="mt-4 flex justify-center gap-3">
               <button
-                onClick={() => router.push(`/watch/${nextId}`)}
-                className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-black active:scale-95"
+                onClick={() => router.push(`/watch/${nextId}?binge=${streak.current}`)}
+                className="rounded-full bg-accent px-5 py-2 text-sm font-semibold text-bg active:scale-95"
               >
                 Play now
               </button>
               <button
                 onClick={() => setCountdown(null)}
-                className="rounded-full border border-white/20 px-5 py-2 text-sm text-white/80"
+                className="rounded-full border border-line px-5 py-2 text-sm text-cream-dim"
               >
                 Cancel
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* End-of-video gag (no next episode) */}
-      {ended && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center overflow-hidden bg-black">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/julia/m2.jpeg" alt="" className="absolute inset-0 h-full w-full object-cover" />
-          <div className="absolute inset-0 bg-black/40" />
-          <div className="relative px-6 text-center">
-            <p className="text-2xl font-bold text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">
-              It&apos;s over.
-            </p>
-            <button
-              onClick={watchAgain}
-              className="mt-4 rounded-full bg-white px-5 py-2 text-sm font-semibold text-black active:scale-95"
-            >
-              Watch again
-            </button>
           </div>
         </div>
       )}
