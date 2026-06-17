@@ -36,24 +36,23 @@ export default async function Home({
   return (
     <div className="space-y-10">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-sm font-medium uppercase tracking-widest text-white/40">
-          Home
-        </h1>
+        <p className="text-xs font-medium uppercase tracking-[0.25em] text-cream-dim">
+          Your shelf
+        </p>
         <TopActions tmdbEnabled={tmdbEnabled()} authEnabled={authEnabled()} />
       </div>
 
       {!tmdbEnabled() && total > 0 && (
-        <div className="rounded-lg border border-white/10 bg-white/5 p-4 text-sm text-white/60">
-          💡 Add a free{" "}
-          <span className="text-white/90">TMDB_API_KEY</span> to{" "}
-          <span className="text-white/90">.env.local</span> to pull real posters,
+        <div className="rounded-xl border border-line bg-bg-soft/50 p-4 text-sm text-cream-dim">
+          Add a free <span className="text-cream">TMDB_API_KEY</span> to{" "}
+          <span className="text-cream">.env.local</span> to pull real posters,
           titles and descriptions, then hit “Match metadata”.
         </div>
       )}
 
       {resuming.length > 0 && (
         <section>
-          <h2 className="mb-4 text-lg font-semibold tracking-tight">
+          <h2 className="mb-4 font-display text-2xl font-semibold tracking-tight">
             Continue watching
           </h2>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">

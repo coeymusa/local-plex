@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { TartSlice, Sparkle, Heart } from "./Doodles";
 
 type Mode = "choose" | "lollipop" | "pasta" | "nyc" | "greatness" | "password";
 
@@ -101,19 +102,21 @@ export default function LoginForm() {
 
   return (
     <div className="mx-auto mt-16 w-full max-w-sm px-2">
-      <div className="mb-8 text-center">
-        <div className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-lg bg-accent/20 text-2xl text-accent">
-          ▶
+      <div className="mb-9 text-center">
+        <div className="relative mx-auto mb-3 h-16 w-16">
+          <TartSlice className="h-16 w-16" />
+          <Sparkle className="absolute -right-2 -top-1 h-5 w-5" />
+          <Heart className="absolute -left-3 top-6 h-4 w-4" />
         </div>
-        <h1 className="text-xl font-semibold tracking-tight">
-          Home<span className="text-accent">Home</span>
+        <h1 className="font-display text-3xl font-semibold tracking-tight">
+          Home<span className="italic text-accent">home</span>
         </h1>
       </div>
 
       {/* Step: choose path */}
       {mode === "choose" && (
         <div className="space-y-3 text-center">
-          <p className="mb-5 text-lg font-medium">Are you Julia?</p>
+          <p className="mb-5 font-display text-2xl font-medium">Are you Julia?</p>
           <button
             onClick={() => {
               setError(null);

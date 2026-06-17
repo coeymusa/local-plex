@@ -1,29 +1,79 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0b0b0f;
-  --foreground: #f3f3f5;
-  --accent: #e0b341;
+  /* Tart palette — blackberry base, raspberry + passionfruit accents, pastry cream */
+  --bg: #160a11;
+  --bg-soft: #23101c;
+  --cream: #f8f1e8;
+  --cream-dim: rgba(248, 241, 232, 0.58);
+  --tart: #ff4d72;        /* raspberry */
+  --tart-deep: #d62f57;
+  --citrus: #ffc24b;      /* passionfruit glaze */
+  --crust: #e7c79f;       /* pastry */
+  --line: rgba(248, 241, 232, 0.1);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-accent: var(--accent);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: var(--bg);
+  --color-foreground: var(--cream);
+  --color-bg: var(--bg);
+  --color-bg-soft: var(--bg-soft);
+  --color-cream: var(--cream);
+  --color-cream-dim: var(--cream-dim);
+  --color-accent: var(--tart);
+  --color-tart: var(--tart);
+  --color-tart-deep: var(--tart-deep);
+  --color-citrus: var(--citrus);
+  --color-crust: var(--crust);
+  --color-line: var(--line);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
 }
 
 body {
   background:
-    radial-gradient(1200px 600px at 50% -10%, #1a1a24 0%, transparent 60%),
-    var(--background);
-  color: var(--foreground);
+    radial-gradient(1100px 620px at 10% -8%, color-mix(in oklab, var(--tart) 20%, transparent), transparent 58%),
+    radial-gradient(880px 560px at 104% -4%, color-mix(in oklab, var(--citrus) 14%, transparent), transparent 55%),
+    var(--bg);
+  background-attachment: fixed;
+  color: var(--cream);
   min-height: 100dvh;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Thin, dark scrollbars to match the cinematic theme */
+/* Fine grain for pastry texture */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Display font niceties */
+.font-display {
+  font-optical-sizing: auto;
+  letter-spacing: -0.01em;
+}
+
+/* Staggered page-load reveal */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+.rise { animation: rise 0.62s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+
+/* Thin tart scrollbars */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #33333c transparent;
+  scrollbar-color: color-mix(in oklab, var(--tart) 45%, transparent) transparent;
 }
+::-webkit-scrollbar { height: 8px; width: 8px; }
+::-webkit-scrollbar-thumb {
+  background: color-mix(in oklab, var(--tart) 40%, transparent);
+  border-radius: 99px;
+}
+
+::selection { background: var(--tart); color: var(--bg); }

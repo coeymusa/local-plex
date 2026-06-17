@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { CardItem } from "@/lib/catalog";
 import PosterCard from "./PosterCard";
+import { Strawberry, Sparkle, Heart } from "./Doodles";
 
 export type Row = { title: string; items: CardItem[] };
 
@@ -23,20 +24,22 @@ export default function JuliaHome({
             className="absolute inset-0 h-full w-full object-cover"
           />
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-accent/30 via-purple-900/30 to-background" />
+          <div className="absolute inset-0 bg-gradient-to-br from-tart/35 via-bg-soft to-background" />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/45 to-transparent" />
+        <Strawberry className="absolute right-5 top-5 h-12 w-12 -rotate-12 drop-shadow-lg sm:h-16 sm:w-16" />
+        <Sparkle className="absolute right-20 top-8 h-6 w-6" />
         <div className="absolute inset-x-0 bottom-0 px-6 pb-7">
-          <p className="text-sm font-medium uppercase tracking-widest text-accent">
-            Hi Julia
+          <p className="flex items-center gap-1.5 font-display text-sm font-medium uppercase tracking-[0.22em] text-citrus">
+            Hi Julia <Heart className="h-4 w-4" />
           </p>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight drop-shadow-lg sm:text-4xl">
+          <h1 className="font-display mt-1 text-4xl font-semibold tracking-tight drop-shadow-lg sm:text-5xl">
             {hero?.title ?? "Your shows"}
           </h1>
           {hero && (
             <Link
               href={`/watch/${hero.id}`}
-              className="mt-4 inline-flex items-center gap-2 rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-black active:scale-95"
+              className="mt-5 inline-flex items-center gap-2 rounded-full bg-accent px-6 py-2.5 text-sm font-semibold text-bg shadow-[0_8px_24px_-8px_rgba(255,77,114,0.7)] transition hover:bg-citrus active:scale-95"
             >
               ▶ Play
             </Link>
@@ -45,8 +48,8 @@ export default function JuliaHome({
       </section>
 
       {rows.length === 0 ? (
-        <p className="px-1 text-sm text-white/50">
-          Nothing curated yet — once metadata is matched, your romance & drama
+        <p className="px-1 text-sm text-cream-dim">
+          Nothing curated yet — once metadata is matched, your romance &amp; drama
           picks will appear here.
         </p>
       ) : (
@@ -56,7 +59,7 @@ export default function JuliaHome({
       <div className="pt-2 text-center">
         <Link
           href="/?all=1"
-          className="text-sm text-white/40 underline-offset-4 hover:text-white/70 hover:underline"
+          className="text-sm text-cream-dim underline-offset-4 transition-colors hover:text-accent hover:underline"
         >
           Browse everything
         </Link>
@@ -68,7 +71,7 @@ export default function JuliaHome({
 function PosterRow({ row }: { row: Row }) {
   return (
     <section>
-      <h2 className="mb-3 text-lg font-semibold tracking-tight">{row.title}</h2>
+      <h2 className="mb-3 font-display text-2xl font-semibold tracking-tight">{row.title}</h2>
       <div className="-mx-6 flex snap-x gap-3 overflow-x-auto px-6 pb-2 [scrollbar-width:none]">
         {row.items.map((item) => (
           <div key={item.id} className="w-32 shrink-0 snap-start sm:w-40">

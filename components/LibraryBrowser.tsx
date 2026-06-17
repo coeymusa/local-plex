@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { CardItem } from "@/lib/catalog";
 import PosterCard from "./PosterCard";
+import { Cherry, TartSlice } from "./Doodles";
 
 const PAGE = 60;
 
@@ -51,39 +52,50 @@ export default function LibraryBrowser({
     <div>
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-semibold tracking-tight">Library</h2>
-          <p className="mt-1 text-sm text-white/50">
+          <h2 className="flex items-center gap-2 font-display text-3xl font-semibold tracking-tight">
+            Library
+            <Cherry className="h-8 w-8" />
+          </h2>
+          <p className="mt-1 text-sm text-cream-dim">
             {items.length} of {total} {total === 1 ? "title" : "titles"}
           </p>
         </div>
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search…"
-          className="w-56 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none focus:border-accent/60"
-        />
+        <div className="relative">
+          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-cream-dim">⌕</span>
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search…"
+            className="w-56 rounded-full border border-line bg-bg-soft/60 py-2.5 pl-9 pr-4 text-sm text-cream outline-none transition focus:border-accent/70 focus:bg-bg-soft"
+          />
+        </div>
       </div>
 
       {items.length === 0 ? (
-        <p className="mt-10 text-center text-sm text-white/40">
-          {loading ? "Searching…" : `Nothing matches “${query}”.`}
-        </p>
+        <div className="mt-12 flex flex-col items-center gap-3 text-center">
+          <TartSlice className="h-16 w-16 opacity-80" />
+          <p className="text-sm text-cream-dim">
+            {loading ? "Searching…" : `Nothing matches “${query}”.`}
+          </p>
+        </div>
       ) : (
         <>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-            {items.map((item) => (
-              <PosterCard key={item.id} item={item} />
+            {items.map((item, i) => (
+              <div key={item.id} className="rise" style={{ animationDelay: `${Math.min(i, 12) * 35}ms` }}>
+                <PosterCard item={item} />
+              </div>
             ))}
           </div>
 
           {items.length < total && (
-            <div className="mt-8 text-center">
+            <div className="mt-10 text-center">
               <button
                 onClick={() => fetchPage(query, items.length)}
                 disabled={loading}
-                className="rounded-lg border border-white/10 bg-white/5 px-5 py-2.5 text-sm hover:border-accent/50 disabled:opacity-50"
+                className="rounded-full border border-accent/40 bg-accent/10 px-6 py-2.5 text-sm font-medium text-accent transition hover:bg-accent/20 disabled:opacity-50"
               >
-                {loading ? "Loading…" : `Load more (${total - items.length} left)`}
+                {loading ? "Loading…" : `Load more · ${total - items.length} left`}
               </button>
             </div>
           )}

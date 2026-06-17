@@ -1,15 +1,18 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Fraunces, Hanken_Grotesk } from "next/font/google";
 import Link from "next/link";
+import { Scatter, Strawberry, Squiggle } from "@/components/Doodles";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const display = Fraunces({
+  variable: "--font-display",
   subsets: ["latin"],
+  style: ["normal", "italic"],
+  weight: ["400", "500", "600", "700", "900"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const body = Hanken_Grotesk({
+  variable: "--font-body",
   subsets: ["latin"],
 });
 
@@ -26,22 +29,25 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${display.variable} ${body.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col font-sans">
-        <header className="sticky top-0 z-20 border-b border-white/5 bg-black/30 backdrop-blur-md">
-          <div className="mx-auto flex max-w-7xl items-center gap-3 px-6 py-4">
-            <Link href="/" className="flex items-center gap-2">
-              <span className="grid h-8 w-8 place-items-center rounded-md bg-accent/20 text-accent">
-                ▶
-              </span>
-              <span className="text-lg font-semibold tracking-tight">
-                Home<span className="text-accent">Home</span>
+      <body className="relative min-h-full font-sans">
+        <Scatter />
+        <header className="sticky top-0 z-30 border-b border-line/70 bg-background/55 backdrop-blur-xl">
+          <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-3.5 sm:px-7">
+            <Link href="/" className="group flex items-center gap-2">
+              <Strawberry className="h-7 w-7 transition-transform duration-300 group-hover:-rotate-12 group-hover:scale-110" />
+              <span className="relative flex items-baseline">
+                <span className="font-display text-2xl font-semibold tracking-tight">Home</span>
+                <span className="font-display text-2xl font-semibold italic text-accent transition-colors group-hover:text-citrus">
+                  home
+                </span>
+                <Squiggle className="absolute -bottom-1.5 left-0 h-2 w-full opacity-70" />
               </span>
             </Link>
           </div>
         </header>
-        <main className="mx-auto w-full max-w-7xl flex-1 px-6 py-8">
+        <main className="relative z-10 mx-auto w-full max-w-7xl flex-1 px-5 py-8 sm:px-7">
           {children}
         </main>
       </body>

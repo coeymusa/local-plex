@@ -150,7 +150,12 @@ export type CardItem = {
   ext: string;
   sizeBytes: number;
   directPlay: boolean;
-  meta: { title: string | null; year: number | null; poster_url: string | null } | null;
+  meta: {
+    title: string | null;
+    year: number | null;
+    poster_url: string | null;
+    rating: number | null;
+  } | null;
   progress: { pct: number } | null;
   /** Present when this card represents a grouped TV series, not a single file. */
   series?: { count: number };
@@ -164,7 +169,7 @@ export function toCard(i: EnrichedItem): CardItem {
     sizeBytes: i.sizeBytes,
     directPlay: i.directPlay,
     meta: i.meta
-      ? { title: i.meta.title, year: i.meta.year, poster_url: i.meta.poster_url }
+      ? { title: i.meta.title, year: i.meta.year, poster_url: i.meta.poster_url, rating: i.meta.rating }
       : null,
     progress: i.progress ? { pct: i.progress.pct } : null,
   };
@@ -205,6 +210,7 @@ function toSeriesCard(name: string, eps: EnrichedItem[]): CardItem {
       title: name,
       year: withArt.meta?.year ?? null,
       poster_url: withArt.meta?.poster_url ?? null,
+      rating: withArt.meta?.rating ?? null,
     },
     progress: null,
     series: { count: eps.length },
