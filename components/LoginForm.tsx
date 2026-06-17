@@ -108,8 +108,8 @@ export default function LoginForm() {
           <Sparkle className="absolute -right-2 -top-1 h-5 w-5" />
           <Heart className="absolute -left-3 top-6 h-4 w-4" />
         </div>
-        <h1 className="font-display text-3xl font-semibold tracking-tight">
-          Home<span className="italic text-accent">home</span>
+        <h1 className="font-display text-2xl font-semibold leading-tight tracking-tight sm:text-3xl">
+          Digital Movie/TV<span className="italic text-accent"> Commune</span>
         </h1>
       </div>
 
