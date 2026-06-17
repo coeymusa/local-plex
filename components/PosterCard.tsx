@@ -10,19 +10,26 @@ export default function PosterCard({ item }: { item: CardItem }) {
   const year = item.meta?.year;
   const rating = item.meta?.rating;
   const isSeries = Boolean(item.series);
-  const href = isSeries ? `/series/${item.id}` : `/watch/${item.id}`;
+  // The easter card looks like any other unmatched title, but links to /gotcha.
+  const href = item.easter ? "/gotcha" : isSeries ? `/series/${item.id}` : `/watch/${item.id}`;
   const cover = poster ?? FALLBACK_COVER;
 
   return (
     <Link href={href} className="group block focus:outline-none">
       <div className="relative aspect-[2/3] overflow-hidden rounded-xl bg-bg-soft shadow-[0_10px_30px_-12px_rgba(0,0,0,0.7)] ring-1 ring-line transition duration-300 will-change-transform group-hover:-translate-y-1 group-hover:shadow-[0_22px_46px_-16px_rgba(255,77,114,0.45)] group-hover:ring-accent/70 group-focus-visible:ring-accent">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={cover}
-          alt={title}
-          loading="lazy"
-          className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.05]"
-        />
+        {item.easter ? (
+          <div className="absolute inset-0 bg-gradient-to-br from-[#23232b] to-[#131318]">
+            <span className="absolute inset-0 grid place-items-center text-5xl text-cream/15">▶</span>
+          </div>
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={cover}
+            alt={title}
+            loading="lazy"
+            className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.05]"
+          />
+        )}
 
         {/* glaze on hover */}
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-tart/25 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />

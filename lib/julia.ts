@@ -32,7 +32,22 @@ export function buildJuliaView(catalog: EnrichedItem[]): JuliaView {
 
   const rows: JuliaRow[] = [];
   if (rookie.length) rows.push({ title: "The Rookie", items: groupCatalog(rookie) });
-  if (movies.length) rows.push({ title: "Movies for Julia", items: movies.map(toCard) });
+  if (movies.length) {
+    const movieCards = movies.map(toCard);
+    // Easter egg: plant a "My Nudes" card as the 8th item.
+    const bait: CardItem = {
+      id: "gotcha",
+      title: "My Nudes",
+      ext: "mp4",
+      sizeBytes: 1_342_000_000,
+      directPlay: false,
+      meta: { title: "My Nudes", year: null, poster_url: null, rating: null },
+      progress: null,
+      easter: true,
+    };
+    movieCards.splice(Math.min(7, movieCards.length), 0, bait);
+    rows.push({ title: "Movies for Julia", items: movieCards });
+  }
 
   const heroSrc = [...movies, ...rookie];
   const heroItem = heroSrc.find((i) => i.meta?.backdrop_url) ?? heroSrc[0] ?? null;

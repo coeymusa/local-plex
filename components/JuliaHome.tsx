@@ -72,9 +72,9 @@ function PosterRow({ row }: { row: Row }) {
   return (
     <section>
       <h2 className="mb-3 font-display text-2xl font-semibold tracking-tight">{row.title}</h2>
-      <div className="-mx-6 flex snap-x gap-3 overflow-x-auto px-6 pb-2 [scrollbar-width:none]">
+      <div className="h-scroll -mx-5 flex gap-3 overflow-x-auto px-5 pb-2 [scrollbar-width:none] sm:-mx-7 sm:px-7">
         {row.items.map((item) => (
-          <div key={item.id} className="w-32 shrink-0 snap-start sm:w-40">
+          <div key={item.id} className="w-32 shrink-0 sm:w-40">
             <PosterCard item={item} />
           </div>
         ))}

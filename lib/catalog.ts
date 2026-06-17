@@ -159,6 +159,8 @@ export type CardItem = {
   progress: { pct: number } | null;
   /** Present when this card represents a grouped TV series, not a single file. */
   series?: { count: number };
+  /** A planted easter-egg card (links to /gotcha, shows a "?" cover). */
+  easter?: boolean;
 };
 
 export function toCard(i: EnrichedItem): CardItem {
